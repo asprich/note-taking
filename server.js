@@ -77,6 +77,74 @@ app.get('/notes', (req, res) => {
   res.json(Object.values(getNotes()));
 });
 
+//Get the tags for a note
+app.get('/notes/tags/:id', (req,res) => {
+  const note = getNote(req.params.id);
+  
+  //404 if a note doesn't exist
+  if (!note)
+    return res.sendStatus(404);
+
+  //return an empty array if tags hasn't been defined
+  res.json(note.tags || []);
+});
+
+app.post('/notes/tags/:id', (req,res) => {
+  const note = getNote(req.params.id);
+
+  //404 if a note doesn't exist
+  if (!note)
+    return res.sendStatus(404);
+
+  //Get the tag array from the request
+  const tagsFromQueryBody = req.body;
+
+  //If the body of the request isn't an array return a 400
+  if (!Array.isArray(tagsFromQueryBody))
+    return res.status(400).send("you must pass in an array of tags");
+
+  //Ensure the note the tags field and it's an array
+  if (!Array.isArray(note.tags))
+    note.tags = [];
+
+  tagsFromQueryBody.map(tag => {
+    //If the incoming item isn't a string, then it's not a valid tag
+    if (typeof tag !== "string") return;
+    
+    //If the note already has this tag, then we don't need to add it
+    //this will also dedup user entered tags
+    if (note.tags.includes(tag)) return;
+
+    note.tags.push(tag);
+  });
+
+  res.json(note);
+});
+
+app.delete('/notes/tags/:id', (req, res) => {
+  const note = getNote(req.params.id);
+
+  //404 if a note doesn't exist
+  if (!note)
+    return res.status(404);
+
+  //Ensure the note the tags field and it's an array
+  if (!Array.isArray(note.tags))
+    note.tags = [];
+
+  //If the body of the request isn't an array return a 400
+  const tagsToRemove = req.body;
+  if (!Array.isArray(tagsToRemove))
+    return res.status(400).send("you must pass in an array of tags");
+
+  //Remove the requested tags from the array
+  note.tags = note.tags.filter(tag => !tagsToRemove.includes(tag));
+
+  res.json(note);
+});
+
+
+
 app.get('/notes/:id', (req, res) => {
   const note = getNote(req.params.id);
   res.json(note);
