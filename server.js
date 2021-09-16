@@ -20,6 +20,42 @@ const notes = {
       edited_by: 'A User',
     }],
   },
+  2: {
+    "id": 2,
+    "title": "Test Note 2",
+    "body": "This is a second test note object that will be available by default",
+    "created_at": 1631767852081,
+    "created_by": "admin",
+    "edit_history": [
+        {
+            "edited_at": 1631767852081,
+            "edited_by": "A User"
+        }
+    ],
+    "tags": [
+        "orange",
+        "blue",
+        "yellow"
+    ]
+  },
+  3: {
+    "id": 3,
+    "title": "Test Note 3",
+    "body": "This is a third test note object that will be available by default",
+    "created_at": 1631767852081,
+    "created_by": "admin",
+    "edit_history": [
+        {
+            "edited_at": 1631767852081,
+            "edited_by": "A User"
+        }
+    ],
+    "tags": [
+        "red",
+        "blue",
+        "green"
+    ]
+  }
 };
 
 
@@ -34,6 +70,7 @@ const addNote = ({ title, body, created_by }) => {
     created_by,
     created_at: Date.now(),
     edit_history: [],
+    tags: []
   };
   return notes[id];
 };
@@ -143,7 +180,41 @@ app.delete('/notes/tags/:id', (req, res) => {
   res.json(note);
 });
 
+//Helper method to compare two strings, also case insensitive
+const insensitiveCompare = (a, b) => {
+  return new RegExp(`^${a}$`,"i").test(b);
+};
 
+//Supports ?q=searchtext
+app.get('/notes/search', (req, res) => {
+  const notes = Object.values(getNotes());
+
+  //Get the search text from the query string
+  const searchText = req.query.q;
+
+  //If they're not looking for anything,
+  //we don't need to send them anything
+  if (searchText) {
+    //In this simple search we'll check through the tags
+    //to see if any of them match the supplied query
+    const results = notes.filter(note => {
+      //This variable is for debugability
+      let isMatch = Array.isArray(note.tags) 
+        && note.tags.filter(tag => insensitiveCompare(tag, searchText)).length > 0
+
+      return isMatch;
+    });
+
+    //If we have matches then we're done!
+    if (results && results.length)
+      return res.json(results);
+  }
+    
+  //If they're here then they either didn't
+  //supply a search term, or there were no
+  //matching records
+  res.status(404).json([]);
+});
 
 app.get('/notes/:id', (req, res) => {
   const note = getNote(req.params.id);
